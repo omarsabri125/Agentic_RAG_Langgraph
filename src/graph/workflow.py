@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from .state import AgentState
-from .edges import route_decision, route_documents
+from .edges import route_decision, route_documents, decide_to_generate_after_rewriting
 from agents import (router_agent, search_agent, generate_answer, 
                     retriever_agent, grade_agent, rewrite_agent, answer_grader, hallucination_agent)
 
@@ -35,7 +35,12 @@ def create_workflow():
         lambda state: state.get("next"),
         {"generate": "GenerateAnswer", "rewrite": "RewriteAgent"}
     )
-    graph.add_edge("RewriteAgent", "RetrieverAgent")
+
+    graph.add_conditional_edges(
+    "RewriteAgent",
+    lambda state: decide_to_generate_after_rewriting(state)["next"],
+    {"retriever": "RetrieverAgent", "context_mismatch": END}
+)
 
     graph.add_conditional_edges(
         "AnswerGrader",

@@ -1,26 +1,44 @@
 from graph.state import AgentState
 from utils.llm_provider import llm
-from langchain_core.messages import HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
 
 def rewrite_agent(state: AgentState):
-
     user_question = state["query"]
-    messages = [
-        HumanMessage(
-            content=f"""
-            You are a helpful assistant that improves clarity of user questions.
+    docs = state.get("documents", [])
 
-            Rewrite the following question to make it clearer, grammatically correct, and semantically precise.
-            Do NOT include any extra words like "Improved question:", "Rewritten:", or quotes — return ONLY the rewritten question text.
+    if not docs:
+        return {"query": "question not relevant"}
 
-            Original question:
-            -------
-            {user_question}
-            -------
-            """
-        )
-    ]
+    prompt = PromptTemplate(
+        template="""You are a question re-writer that converts an input question into a better optimized version for vector store retrieval.  
+        You are given both a question and a document.  
 
-    llm_response = llm.invoke(messages)
-    better_query = llm_response.content.strip()
+        - First, check if the question is relevant to the document by identifying a connection or relevance between them.  
+        - If there is some relevancy, rewrite the question based on its semantic intent and the context of the document.  
+        - If no relevance is found, simply return this single word: "question not relevant" (no extra text).
+
+        ⚠️ IMPORTANT:
+        - Return ONLY the rewritten question text.
+        - Do NOT include explanations, reasoning, or phrases like "Rewritten question:".
+        - Do NOT include punctuation outside the question itself.
+
+        Here is the user question:
+        {question}
+
+        Here is the retrieved document:
+        {context}
+        """,
+        input_variables=["context", "question"],
+    )
+
+    chain = prompt | llm | StrOutputParser()
+
+    response = chain.invoke({
+        "context": docs,
+        "question": user_question
+    })
+
+    better_query = response.strip()
+
     return {"query": better_query}

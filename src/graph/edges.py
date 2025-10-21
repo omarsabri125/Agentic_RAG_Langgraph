@@ -12,3 +12,8 @@ def route_documents(state: AgentState):
         return {"next": "generate"}
     return {"next": "rewrite"}
 
+def decide_to_generate_after_rewriting(state: AgentState):
+    query = state["query"]
+    if query == "question not relevant":
+        return {"next": "context_mismatch"}
+    return {"next": "retriever"}
