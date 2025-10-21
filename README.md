@@ -3,7 +3,7 @@
 A sophisticated Retrieval-Augmented Generation (RAG) system built with LangGraph, featuring multiple specialized agents for intelligent document processing and query handling.
 
 <p float="left">
-  <img src="assets/workflow.png" width="600" />
+  <img src="assets\AgentWorkflow.png" width="600" />
 </p>
 
 ## 🌟 Overview
